@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"runtime"
 	"path/filepath"
 	"strings"
 	"fmt"
@@ -95,11 +94,12 @@ func saveToCSV(domainMap map[string]*types.EmailSet, filename string) {
 	if !strings.HasSuffix(filename, ".csv") {
 		filename = filename + ".csv"
 	}
-	_, filepointer, _, ok := runtime.Caller(0)
-	if !ok {
+	
+	filePath, err := os.Executable()
+	if err != nil {
 	log.Fatal("unable to get the current filename")
 }
-	dirname := filepath.Dir(filepointer)
+	dirname := filepath.Dir(filePath)
 	path := filepath.Join(dirname, filename)
 	file, err := os.Create(path)
 
