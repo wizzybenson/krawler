@@ -18,6 +18,7 @@ func GetSerp(query, countrycode, langcode string, maxLenght int) []string {
 			googlesearch.RateLimit = RateLimit
 			options := googlesearch.SearchOptions{
 				CountryCode:countrycode,LanguageCode:langcode,FollowNextPage:true,Limit: limit,Start: start,
+				UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
 			}
 			sitesserp, err := googlesearch.Search(context.Background(), query, options)
 			

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
     "github.com/wizzybenson/krawler/cmd/contact"
 )
-var version = "0.0.1"
+var version = "0.0.2"
 var KrawlerCmd = &cobra.Command{
     Use:  "krawler",
     Short: "krawler - a cli tool to perform various web crawling needs",

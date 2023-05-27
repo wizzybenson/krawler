@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"fmt"
-
 	"github.com/gocolly/colly"
 	"github.com/mcnijman/go-emailaddress"
 	"github.com/wizzybenson/krawler/pkg/contact/types"
@@ -25,7 +24,7 @@ func GrabContacts(sites []string, filename string) {
 
 	scraper.DisallowedURLFilters = []*regexp.Regexp{regexp.MustCompile(`facebook|instagram|youtube|twitter|wiki|linkedin|tiktok|tripadvisor`)}
 	scraper.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-	domainMap := make(map[string]*types.EmailSet)
+	domainMap := make(map[string]*types.Contact)
 	bodyString := []byte{}
 	validateHost := false
 	home := false
@@ -45,15 +44,24 @@ func GrabContacts(sites []string, filename string) {
 
 	scraper.OnHTML("body", func(e *colly.HTMLElement) {
 		emails := []string{}
+		phones := []string{}
 
 		foundEmails := emailaddress.FindWithIcannSuffix(bodyString, validateHost)
 		for _, email := range foundEmails {
 			emails = append(emails, email.String())
 		}
 		if domainMap[e.Request.URL.Host] == nil {
-			domainMap[e.Request.URL.Host] = &types.EmailSet{}
+			domainMap[e.Request.URL.Host] = types.NewContact()
 		}
-		domainMap[e.Request.URL.Host].Add(emails)
+		domainMap[e.Request.URL.Host].Emailset.Add(emails)
+
+		swissfoneregex := regexp.MustCompile(`(\b(0041|0)|\B\+41)(\s?\(0\))?(\s)?[1-9]{2}(\s)?[0-9]{3}(\s)?[0-9]{2}(\s)?[0-9]{2}\b`)
+		numbers := swissfoneregex.FindAll([]byte(bodyString), -1)
+		for _, fonenumber := range numbers {
+			phones = append(phones, string(fonenumber))
+		}
+
+		domainMap[e.Request.URL.Host].Phoneset.Add(phones)
 
 		if home {
 			contactpageRegex := regexp.MustCompile(`about-us|contact|contact-us|nous-contacter|contacter`)
@@ -89,7 +97,7 @@ func GrabContacts(sites []string, filename string) {
 	saveToCSV(domainMap, filename)
 }
 
-func saveToCSV(domainMap map[string]*types.EmailSet, filename string) {
+func saveToCSV(domainMap map[string]*types.Contact, filename string) {
 	filename = strings.Trim(filename," ")
 	if !strings.HasSuffix(filename, ".csv") {
 		filename = filename + ".csv"
@@ -114,16 +122,18 @@ func saveToCSV(domainMap map[string]*types.EmailSet, filename string) {
 	headers := []string{
 		"website",
 		"emails",
+		"phones",
 	}
 	writer.Write(headers)
 
-	fmt.Println("Saving emails to ,", file.Name())
+	fmt.Println("Saving contacts to ,", file.Name())
 	// writing each website contact as a CSV row
-	for domain, emailSet := range domainMap {
-		// converting a PokemonProduct to an array of strings
+	for domain, contact := range domainMap {
+		
 		record := []string{
 			domain,
-			emailSet.ToString(),
+			contact.Emailset.ToString(),
+			contact.Phoneset.ToString(),
 		}
 
 		// adding a CSV record to the output file
